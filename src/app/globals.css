@@ -1,0 +1,244 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ */
+/* GymFlow design tokens (PRD §9-§15, §111)                            */
+/* ------------------------------------------------------------------ */
+@theme {
+  --font-sans: Inter, Manrope, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* base canvas */
+  --color-canvas: #242424;
+  --color-canvas-deep: #1b1b20;
+  --color-canvas-dark: #15151a;
+  --color-ink: #0f1014;
+  --color-panel: #202126;
+  --color-panel-raised: #292a30;
+  --color-panel-hover: #2f3037;
+
+  /* pastels */
+  --color-pastel-cyan: #c9edf0;
+  --color-pastel-blue: #c8e5ed;
+  --color-pastel-lavender: #ded7f0;
+  --color-pastel-cream: #f1ece2;
+  --color-pastel-blush: #efdadb;
+  --color-pastel-sage: #d8e6d6;
+
+  /* accents */
+  --color-accent-blue: #7890ff;
+  --color-accent-purple: #9d8aff;
+  --color-accent-cyan: #8dddeb;
+  --color-accent-green: #82d6b2;
+
+  /* text */
+  --color-ghost: #f7f7f4;
+  --color-ghost-dim: #a6a6ae;
+  --color-ghost-muted: #6e6e78;
+  --color-pastel-ink: #18181c;
+
+  /* radii */
+  --radius-xs: 12px;
+  --radius-sm: 16px;
+  --radius-control: 20px;
+  --radius-card: 28px;
+  --radius-lg: 36px;
+  --radius-hero: 44px;
+  --radius-pill: 999px;
+
+  /* shadows */
+  --shadow-panel: 0 24px 70px rgba(0, 0, 0, 0.3);
+  --shadow-float: 0 18px 50px rgba(0, 0, 0, 0.25);
+  --shadow-lift: 0 30px 80px rgba(0, 0, 0, 0.38);
+  --shadow-glow: 0 0 0 1px rgba(120, 144, 255, 0.25), 0 12px 40px rgba(120, 144, 255, 0.18);
+
+  /* motion */
+  --ease-glass: cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-fade-up: fade-up 0.6s var(--ease-glass) both;
+  --animate-fade-in: fade-in 0.5s var(--ease-glass) both;
+  --animate-float-slow: float-slow 9s ease-in-out infinite;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-pulse-ring: pulse-ring 1.6s ease-out infinite;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+@keyframes shimmer {
+  from {
+    background-position: -420px 0;
+  }
+  to {
+    background-position: 420px 0;
+  }
+}
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(130, 214, 178, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 0 22px rgba(130, 214, 178, 0);
+  }
+}
+@keyframes draw {
+  from {
+    stroke-dashoffset: var(--dash, 1200);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+html,
+body {
+  background-color: var(--color-canvas-dark);
+}
+
+body {
+  color: var(--color-ghost);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Ambient background: faint purple-blue arcs and light bleed (PRD §129) */
+.gf-ambient {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+.gf-ambient::before,
+.gf-ambient::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(157, 138, 255, 0.1);
+}
+.gf-ambient::before {
+  width: 1200px;
+  height: 1200px;
+  top: -520px;
+  right: -380px;
+}
+.gf-ambient::after {
+  width: 900px;
+  height: 900px;
+  bottom: -420px;
+  left: -320px;
+  border-color: rgba(120, 144, 255, 0.08);
+}
+.gf-glow-blue {
+  position: absolute;
+  width: 560px;
+  height: 560px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(120, 144, 255, 0.16), transparent 62%);
+  filter: blur(30px);
+}
+.gf-glow-purple {
+  position: absolute;
+  width: 480px;
+  height: 480px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(157, 138, 255, 0.13), transparent 62%);
+  filter: blur(30px);
+}
+
+@utility gf-glass {
+  background-color: color-mix(in oklab, var(--color-panel) 72%, transparent);
+  backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+@utility gf-hairline {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+@utility gf-pastel-edge {
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+@utility gf-num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+
+@utility gf-scroll-x {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overflow-x: auto;
+}
+
+.gf-scroll-x::-webkit-scrollbar {
+  display: none;
+}
+
+@utility gf-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 0%,
+    rgba(255, 255, 255, 0.09) 50%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  background-size: 420px 100%;
+  background-repeat: no-repeat;
+  animation: var(--animate-shimmer);
+}
+
+.gf-draw {
+  stroke-dasharray: var(--dash, 1200);
+  animation: draw 1.5s var(--ease-glass) both;
+}
+
+/* Visible focus states (§109) */
+:focus-visible {
+  outline: 2px solid var(--color-accent-blue);
+  outline-offset: 2px;
+}
+
+[data-left-panel] {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+@media print {
+  .gf-no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+    color: #000;
+  }
+}

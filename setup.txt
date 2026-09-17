@@ -1,0 +1,162 @@
+GYMFLOW — SETUP & DEPLOYMENT GUIDE
+==================================
+
+GymFlow is a production gym-management platform: members, trainers, membership plans,
+subscriptions, partial payments, receipts, attendance (QR), notifications, holidays,
+analytics, reports and role-scoped member/trainer apps.
+
+This file is the single source of truth for bootstrapping the app. Read it fully before
+changing configuration, and never commit real credentials into source control.
+
+-------------------------------------------------------------------------------
+1. STACK
+-------------------------------------------------------------------------------
+- Next.js 16 (App Router, React 19, Server Components, TypeScript strict)
+- PostgreSQL (Supabase or any Postgres 14+) through Drizzle ORM (`pg` driver)
+- Tailwind CSS v4, tokens declared in `src/app/globals.css` (`@theme`)
+- Auth: scrypt password hashing + HMAC-signed, HttpOnly session cookie
+- QR: `qrcode` (rendering) + `jsqr` (camera decoding), Lucide icons
+
+-------------------------------------------------------------------------------
+2. FILES THAT MATTER
+-------------------------------------------------------------------------------
+- `src/db/schema.ts` ................ all tables + indexes (every gym table carries gym_id)
+- `src/db/index.ts` ................. pooled client, TLS + Supabase pooler handling
+- `src/lib/bootstrap.ts` ............ first-run provisioning of gym + owner account
+- `src/lib/auth.ts` ................. sessions, role guards, per-request user cache
+- `src/lib/queries.ts` .............. all read models (parallel, request-memoised)
+- `src/lib/actions.ts` .............. payment/subscription business rules
+- `src/lib/qr.ts` ................... QR payload encode/parse
+- `src/components/ui/*` ............. design system (panels, pastel cards, charts, states)
+- `src/components/layout/*` ......... floating navigation, dock, command palette
+- `src/app/admin|member|trainer/*` .. the three role-scoped applications
+- `src/app/api/*` ................... protected JSON endpoints
+
+-------------------------------------------------------------------------------
+3. SUPABASE SETUP (step by step)
+-------------------------------------------------------------------------------
+1. Create a project at https://supabase.com (choose the region closest to your users —
+   latency here is the single biggest factor in how fast the app feels).
+2. In Supabase open **Project Settings → Database → Connection string**.
+   Copy the **Connection pooling** string (host `...pooler.supabase.com`). Two modes:
+   - Transaction mode, port `6543` — recommended for serverless/Vercel. GymFlow detects this
+     host and disables prepared-statement caching automatically.
+   - Session mode, port `5432` — recommended for always-on Node servers.
+3. Replace `[YOUR-PASSWORD]` with the database password and keep `?sslmode=require`.
+   Example shape (placeholders only — never commit the real value):
+   `DATABASE_URL=postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres?sslmode=require`
+4. Create the tables (no migration files needed):
+       npx drizzle-kit push
+   This reads `drizzle.config.json`; point its `dbCredentials.url` at the same Supabase URL
+   (or export `DATABASE_URL` and edit that one line before running).
+5. Nothing else is required: tables, indexes and the owner account are provisioned for you
+   on the first request (see section 5). Optionally enable Supabase **Row Level Security**
+   if you also expose the database to clients directly — GymFlow talks to Postgres only from
+   the server, so RLS is not needed for the app itself.
+
+-------------------------------------------------------------------------------
+4. ENVIRONMENT VARIABLES
+-------------------------------------------------------------------------------
+Create `.env` (local) and add the same keys in your host's dashboard (Vercel → Settings →
+Environment Variables). Required:
+
+    DATABASE_URL        Postgres/Supabase connection string (see section 3)
+    SESSION_SECRET      long random string used to sign session cookies
+                        generate: node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+
+Optional overrides (sensible defaults are built in):
+
+    ADMIN_EMAIL         owner login email           default: saumaydev@gmail.com
+    ADMIN_PASSWORD      owner password              default: 1234567890  ← change after first login
+    ADMIN_NAME          owner display name          default: Saumay
+    GYM_NAME            gym name shown in receipts  default: My Gym
+    PG_POOL_MAX         pool size per server        default: 10
+    PG_STATEMENT_TIMEOUT_MS  query timeout          default: 15000
+    PG_DEBUG            "true" to log SQL           default: off
+
+`.env` is never imported by the client bundle; only `NEXT_PUBLIC_*` variables would be.
+
+-------------------------------------------------------------------------------
+5. FIRST RUN & THE OWNER ACCOUNT
+-------------------------------------------------------------------------------
+On the first request GymFlow runs an idempotent bootstrap that, when the database is empty:
+  1. creates the gym workspace record, and
+  2. creates the owner account from `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
+After that the app is a blank, real workspace — there is no sample data and no test account.
+
+    Owner sign-in:  saumaydev@gmail.com  /  1234567890     (change it in Settings → Security)
+
+Then complete the in-app setup guide (`/onboarding`):
+  1. Gym profile — name, contact, address, opening hours, reminder schedule.
+  2. Membership plans — Basic / Standard / Premium / VIP or your own pricing.
+  3. First member — the 5-step onboarding generates a member code, login and subscription.
+  4. Coaches — add trainers, contracts and assign members.
+Members and trainers sign in with the credentials generated at registration.
+
+-------------------------------------------------------------------------------
+6. LOCAL DEVELOPMENT
+-------------------------------------------------------------------------------
+    npm install
+    # configure .env (section 4)
+    npx drizzle-kit push      # create/update tables
+    npm run dev               # http://localhost:3000
+Quality gates used before every release:
+    npx next typegen
+    npm exec tsc -- --noEmit --pretty false
+    npm run build
+    npm run lint
+
+-------------------------------------------------------------------------------
+7. PRODUCTION BUILD & DEPLOY
+-------------------------------------------------------------------------------
+    npm run build && npm run start      # any Node host, or deploy to Vercel
+Checklist:
+  - Set DATABASE_URL + SESSION_SECRET in the host environment (production values).
+  - Serve over HTTPS: camera-based QR scanning requires a secure origin.
+  - Add your domain to Supabase allowed origins if you later use Supabase Auth/Storage.
+  - Keep the Supabase project in the same region as the app server to keep queries <20 ms.
+
+-------------------------------------------------------------------------------
+8. ATTENDANCE / QR SCANNER
+-------------------------------------------------------------------------------
+- Member passes: `GET /api/qr?code=<MEMBER_CODE>` returns a high-contrast SVG that encodes
+  `GYMFLOW:<CODE>`. Members are only ever able to render their own pass.
+- Scanning: `/admin/attendance/station` and `/trainer/attendance/station` (full-screen,
+  best for the entrance tablet). The station decodes continuously using the browser
+  `BarcodeDetector` when available and the bundled `jsqr` engine otherwise, and marks
+  attendance the instant a code is read — no confirmation step. Duplicate same-day scans are
+  reported, never duplicated. USB/keyboard-wedge scanners also work.
+- `parseScannedCode()` accepts raw codes, the `GYMFLOW:`/`GF:` payload and deep links.
+- Camera access needs HTTPS (localhost is treated as secure) and a user permission grant.
+
+-------------------------------------------------------------------------------
+9. SECURITY MODEL
+-------------------------------------------------------------------------------
+- Sessions: HMAC-SHA256 signed cookie, HttpOnly + SameSite=Lax, 7 day expiry, secure in prod.
+- Passwords: scrypt with per-user salt; hashes only, never reversible.
+- Authorisation: enforced server-side on every page/layout and API route.
+  Admin → own gym only · Trainer → assigned roster only · Member → own records only.
+- Audit: every write records actor, action, entity and value diff in `audit_logs`.
+- Validated inputs on all mutation endpoints; errors never leak internals to the client.
+
+-------------------------------------------------------------------------------
+10. PERFORMANCE NOTES
+-------------------------------------------------------------------------------
+- Dashboard/analytics read models execute as a single parallel batch (one network hop)
+  instead of sequential queries — important for remote Postgres.
+- Loaders are wrapped in React `cache()` so a layout and its page share one query per request.
+- The client router cache is tuned via `experimental.staleTimes` in `next.config.ts`
+  (dynamic 60s / static 300s): revisiting a panel is instant, while mutations call
+  `router.refresh()` for authoritative data.
+- Navigation links prefetch, and every route ships a skeleton loading surface.
+- Database indexes cover the hot paths: member lookup by code/user, payments by date,
+  attendance by member/day (unique) and by day, subscriptions by status/end date, dues,
+  notifications per recipient, trainer rosters, audit history.
+
+-------------------------------------------------------------------------------
+11. DO NOT
+-------------------------------------------------------------------------------
+- Do not commit `.env` or paste real credentials into code, tickets or UI.
+- Do not replace the stack (no second ORM, no alternate CSS engine) or hand-edit generated
+  files; extend `src/db/schema.ts` and re-run `npx drizzle-kit push`.
+- Do not add sample/demo accounts to the shipped product — provision real users instead.
