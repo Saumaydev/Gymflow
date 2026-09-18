@@ -17,6 +17,8 @@ export function MemberCard({
     name: string;
     memberCode: string;
     status: string;
+    profileImage?: string | null;
+    accountStatus?: string;
     plan: string | null;
     daysLeft: number | null;
     amountDue: number;
@@ -33,7 +35,14 @@ export function MemberCard({
       className={`group block rounded-card border border-white/25 ${pastelBg[accent]} p-5 text-pastel-ink shadow-float transition-all duration-300 hover:-translate-y-1 hover:shadow-lift`}
     >
       <div className="flex items-start justify-between">
-        <Avatar name={member.name} size={46} accent={accent} className="bg-white/60" />
+        <Avatar
+          name={member.name}
+          size={46}
+          accent={accent}
+          src={member.profileImage}
+          subtitle={`${member.memberCode} · ${member.plan ?? "No plan"}`}
+          className={member.profileImage ? "border-2 border-white/70" : "bg-white/60"}
+        />
         <span className="text-[11px] font-semibold text-pastel-ink/50">{member.memberCode}</span>
       </div>
       <p className="mt-4 truncate text-[15.5px] font-semibold">{member.name}</p>
@@ -44,7 +53,11 @@ export function MemberCard({
         <span className="text-[11.5px] font-semibold text-pastel-ink/70">
           {member.status === "ACTIVE" ? "Active" : member.status.toLowerCase()}
         </span>
-        {member.amountDue > 0 ? (
+        {member.accountStatus === "INACTIVE" || member.status === "INACTIVE" ? (
+          <span className="ml-auto rounded-pill bg-pastel-ink/85 px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wide text-pastel-cream">
+            Deactivated
+          </span>
+        ) : member.amountDue > 0 ? (
           <span className="ml-auto rounded-pill bg-white/70 px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wide">
             {inr(member.amountDue)} due
           </span>
@@ -79,6 +92,7 @@ export function TrainerCard({
     trainer_code: string;
     specialization: string | null;
     experience_years: number;
+    profile_image?: string | null;
     assigned: number;
     attendance_rate: number;
     employment_type?: string | null;
@@ -92,7 +106,14 @@ export function TrainerCard({
       className={`block rounded-card border border-white/25 ${pastelBg[accent]} p-5 text-pastel-ink shadow-float transition-all duration-300 hover:-translate-y-1 hover:shadow-lift`}
     >
       <div className="flex items-start justify-between">
-        <Avatar name={trainer.name} size={46} accent={accent} className="bg-white/60" />
+        <Avatar
+          name={trainer.name}
+          size={46}
+          accent={accent}
+          src={trainer.profile_image}
+          subtitle={trainer.specialization ?? "Coach"}
+          className={trainer.profile_image ? "border-2 border-white/70" : "bg-white/60"}
+        />
         <span className="text-[11px] font-semibold text-pastel-ink/50">{trainer.trainer_code}</span>
       </div>
       <p className="mt-4 truncate text-[15.5px] font-semibold">{trainer.name}</p>
@@ -268,13 +289,15 @@ export function LocationLine({ address }: { address: string | null }) {
 export function TrainerMini({
   name,
   specialization,
+  src,
 }: {
   name: string;
   specialization?: string | null;
+  src?: string | null;
 }) {
   return (
     <div className="flex items-center gap-3 rounded-card border border-white/8 bg-white/4 p-3">
-      <Avatar name={name} size={36} accent="lavender" />
+      <Avatar name={name} size={36} accent="lavender" src={src} subtitle={specialization ?? "Coach"} />
       <div className="min-w-0">
         <p className="truncate text-[13px] font-semibold text-ghost">{name}</p>
         <p className="truncate text-[11px] text-ghost-muted">{specialization ?? "Coach"}</p>

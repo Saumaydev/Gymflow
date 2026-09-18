@@ -29,6 +29,7 @@ export type NavShellUser = {
   role: Role;
   gymName: string;
   subtitle: string;
+  avatarUrl?: string | null;
 };
 
 const OPEN_PALETTE_EVENT = "gymflow:palette";
@@ -191,9 +192,13 @@ function Topbar({ user, unread, notificationHref }: { user: NavShellUser; unread
           aria-haspopup="menu"
           aria-expanded={menuOpen}
         >
-          <IconTile accent="lavender" size="sm">
-            <User size={15} />
-          </IconTile>
+          {user.avatarUrl ? (
+            <Avatar name={user.name} size={30} src={user.avatarUrl} subtitle={user.role.toLowerCase()} />
+          ) : (
+            <IconTile accent="lavender" size="sm">
+              <User size={15} />
+            </IconTile>
+          )}
           <span className="hidden text-[12.5px] font-semibold text-ghost sm:block">{user.name.split(" ")[0]}</span>
           <ChevronDown size={14} className="text-ghost-muted" />
         </button>
@@ -204,7 +209,7 @@ function Topbar({ user, unread, notificationHref }: { user: NavShellUser; unread
             role="menu"
           >
             <div className="flex items-center gap-3 px-3 py-3">
-              <Avatar name={user.name} size={40} />
+              <Avatar name={user.name} size={40} src={user.avatarUrl} subtitle={user.email} />
               <div className="min-w-0">
                 <p className="truncate text-[13px] font-semibold text-ghost">{user.name}</p>
                 <p className="truncate text-[11px] text-ghost-muted">{user.email}</p>

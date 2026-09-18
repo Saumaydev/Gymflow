@@ -19,6 +19,7 @@ export default async function TrainerLayout({ children }: { children: ReactNode 
         email: user.email,
         role: "TRAINER",
         gymName: user.gym.name,
+        avatarUrl: user.profileImage,
         subtitle: `${user.trainer?.specialization ?? "Coach"} · ${user.trainer?.experienceYears ?? 0} years on the floor`,
       }}
       unread={unread[0]?.c ?? 0}

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Activity, Dumbbell, Mail, Phone, Users } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { getTrainerProfile } from "@/lib/queries";
-import { DarkPanel, KeyValue, PastelCard, Pill, SectionHeading } from "@/components/ui/primitives";
+import { Avatar, DarkPanel, KeyValue, PastelCard, Pill, SectionHeading } from "@/components/ui/primitives";
 import { MemberPassMini } from "@/components/ui/MemberPass";
 import { formatDate, inr } from "@/lib/format";
 
@@ -27,9 +27,13 @@ export default async function TrainerProfilePage() {
 
       <div className="grid gap-5 xl:grid-cols-[1fr_1.3fr]">
         <PastelCard accent="cream" hero>
-          <span className="gf-num flex h-20 w-20 items-center justify-center rounded-hero bg-white/60 text-[26px] font-semibold">
-            {trainer.name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
-          </span>
+          <Avatar
+            name={trainer.name}
+            size={92}
+            src={trainer.profileImage}
+            subtitle={trainer.specialization ?? "Coach"}
+            className={trainer.profileImage ? "border-2 border-white/70" : "bg-white/60"}
+          />
           <p className="mt-5 text-[24px] font-semibold leading-none">{trainer.name}</p>
           <p className="mt-1.5 text-[12.5px] font-semibold text-pastel-ink/60">
             {trainer.specialization} · {trainer.trainerCode}

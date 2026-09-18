@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { CalendarClock, Dumbbell, Mail, Phone, Sparkles } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { getMemberProfile } from "@/lib/queries";
-import { DarkPanel, IconTile, KeyValue, PastelCard, Pill, SectionHeading } from "@/components/ui/primitives";
+import { Avatar, DarkPanel, IconTile, KeyValue, PastelCard, Pill, SectionHeading } from "@/components/ui/primitives";
 import { formatDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -24,9 +24,13 @@ export default async function MemberTrainerPage() {
       {trainer ? (
         <div className="grid gap-5 xl:grid-cols-[1fr_1.2fr]">
           <PastelCard accent="lavender" hero>
-            <span className="gf-num flex h-24 w-24 items-center justify-center rounded-hero bg-white/60 text-[30px] font-semibold">
-              {trainer.name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
-            </span>
+            <Avatar
+              name={trainer.name}
+              size={96}
+              src={trainer.profileImage}
+              subtitle={trainer.specialization ?? "Coach"}
+              className={trainer.profileImage ? "border-2 border-white/70" : "bg-white/60"}
+            />
             <p className="mt-5 text-[24px] font-semibold leading-none">{trainer.name}</p>
             <p className="mt-1.5 text-[13px] font-semibold text-pastel-ink/65">{trainer.specialization}</p>
             <div className="mt-5 flex flex-wrap gap-2">

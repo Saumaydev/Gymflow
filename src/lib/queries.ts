@@ -22,6 +22,7 @@ import {
 } from "@/db/schema";
 import { addDays, pct, toDate, toISODate, today } from "./format";
 import type { PastelKey } from "./tokens";
+import { decryptSecret } from "./crypto";
 
 export type SqlRow = Record<string, unknown>;
 
@@ -329,6 +330,8 @@ export type MemberListItem = {
   phone: string | null;
   email: string | null;
   status: string;
+  profileImage: string | null;
+  accountStatus: string;
   plan: string | null;
   endDate: string | null;
   daysLeft: number | null;
@@ -376,6 +379,7 @@ async function _listMembers(
 
   const base = sql`
     from ${members} m
+    left join ${users} u on u.id = m.user_id
     left join lateral (
       select s.*, pl.name as plan_name
       from ${subscriptions} s join ${membershipPlans} pl on pl.id = s.plan_id
@@ -399,6 +403,8 @@ async function _listMembers(
     phone: string | null;
     email: string | null;
     status: string;
+    account_status: string;
+    profile_image: string | null;
     plan_name: string | null;
     end_date: string | null;
     days_left: number | null;
@@ -408,6 +414,7 @@ async function _listMembers(
     trainer_name: string | null;
   }>(sql`
     select m.id, m.name, m.member_code, m.phone, m.email, m.status::text as status,
+           coalesce(u.status::text, 'ACTIVE') as account_status, m.profile_image,
            s.plan_name, s.end_date::text as end_date,
            (s.end_date - current_date)::int as days_left,
            coalesce(s.amount_due, 0) as amount_due,
@@ -428,6 +435,8 @@ async function _listMembers(
       phone: m.phone,
       email: m.email,
       status: m.status,
+      profileImage: m.profile_image,
+      accountStatus: m.account_status,
       plan: m.plan_name,
       endDate: m.end_date,
       daysLeft: m.days_left,
@@ -451,6 +460,7 @@ async function _getMemberProfile(gymId: number, memberId: number) {
   if (!member) return null;
 
   const [user] = await db.select().from(users).where(eq(users.id, member.userId)).limit(1);
+  const storedPassword = decryptSecret(user?.passwordEnc);
 
   const subs = await db
     .select({
@@ -500,6 +510,7 @@ async function _getMemberProfile(gymId: number, memberId: number) {
       experienceYears: trainers.experienceYears,
       phone: trainers.phone,
       email: trainers.email,
+      profileImage: trainers.profileImage,
       assignedAt: trainerMembers.assignedAt,
     })
     .from(trainerMembers)
@@ -523,6 +534,7 @@ async function _getMemberProfile(gymId: number, memberId: number) {
   return {
     member,
     user: user ?? null,
+    storedPassword,
     subscriptions: subs,
     current,
     daysLeft,
@@ -550,6 +562,7 @@ async function _listTrainers(gymId: number) {
     trainer_code: string;
     specialization: string | null;
     experience_years: number;
+    profile_image: string | null;
     phone: string | null;
     email: string | null;
     status: string;
@@ -560,7 +573,7 @@ async function _listTrainers(gymId: number) {
     employment_type: string | null;
     contract_end: string | null;
   }>(sql`
-    select t.id, t.name, t.trainer_code, t.specialization, t.experience_years, t.phone, t.email, t.status::text as status,
+    select t.id, t.name, t.trainer_code, t.specialization, t.experience_years, t.profile_image, t.phone, t.email, t.status::text as status,
       (select count(*)::int from ${trainerMembers} tm where tm.trainer_id = t.id and tm.status = 'ACTIVE') as assigned,
       (select coalesce(round(100.0 * count(*) / 30), 0)::int from ${attendance} a where a.trainer_id = t.id and a.date >= ${toISODate(addDays(today(), -29))}) as attendance_rate,
       (select count(*)::int from ${attendance} a where a.trainer_id = t.id and a.date >= ${toISODate(addDays(today(), -29))}) as present_days,
@@ -587,17 +600,25 @@ async function _getTrainerProfile(gymId: number, trainerId: number) {
     .orderBy(desc(trainerContracts.id))
     .limit(1);
 
+  const [account] = await db
+    .select({ email: users.email, passwordEnc: users.passwordEnc, status: users.status })
+    .from(users)
+    .where(eq(users.id, trainer.userId))
+    .limit(1);
+  const storedPassword = decryptSecret(account?.passwordEnc);
+
   const assigned = await rows<{
     id: number;
     name: string;
     member_code: string;
+    profile_image: string | null;
     plan_name: string | null;
     status: string;
     visits: number;
     assigned_at: string;
     present_today: boolean;
   }>(sql`
-    select m.id, m.name, m.member_code, pl.name as plan_name, m.status::text as status,
+    select m.id, m.name, m.member_code, m.profile_image, pl.name as plan_name, m.status::text as status,
       (select count(*)::int from ${attendance} a where a.member_id = m.id and a.date >= ${toISODate(addDays(today(), -29))}) as visits,
       tm.assigned_at::text as assigned_at,
       exists(select 1 from ${attendance} a where a.member_id = m.id and a.date = ${toISODate(today())}) as present_today
@@ -615,7 +636,7 @@ async function _getTrainerProfile(gymId: number, trainerId: number) {
     .orderBy(desc(attendance.date))
     .limit(30);
 
-  return { trainer, contract: contract ?? null, assigned, attendanceRows };
+  return { trainer, contract: contract ?? null, assigned, attendanceRows, account: account ?? null, storedPassword };
 }
 
 /* ------------------------------------------------------------------ */
@@ -1047,12 +1068,13 @@ async function _getTrainerDashboard(gymId: number, trainerId: number, userId: nu
     id: number;
     name: string;
     member_code: string;
+    profile_image: string | null;
     plan_name: string | null;
     visits: number;
     present_today: boolean;
     amount_due: number;
   }>(sql`
-    select m.id, m.name, m.member_code, pl.name as plan_name,
+    select m.id, m.name, m.member_code, m.profile_image, pl.name as plan_name,
       (select count(*)::int from ${attendance} a where a.member_id = m.id and a.date >= ${toISODate(addDays(today(), -29))}) as visits,
       exists(select 1 from ${attendance} a where a.member_id = m.id and a.date = ${toISODate(today())}) as present_today,
       coalesce(s.amount_due, 0) as amount_due

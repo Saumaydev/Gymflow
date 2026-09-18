@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Toaster } from "@/components/ui/overlay";
+import { AvatarViewerProvider } from "@/components/ui/AvatarViewer";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -26,7 +27,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
       </head>
       <body className="min-h-screen bg-canvas-dark font-sans text-ghost antialiased">
-        {children}
+        <AvatarViewerProvider>
+          {children}
+        </AvatarViewerProvider>
         <Toaster />
       </body>
     </html>

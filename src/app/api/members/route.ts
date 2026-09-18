@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { invoices, members, membershipPlans, payments, subscriptions, trainerMembers, trainers, users } from "@/db/schema";
 import { guardAdmin } from "@/lib/auth";
-import { generateTempPassword, hashPassword } from "@/lib/crypto";
+import { encryptSecret, generateTempPassword, hashPassword } from "@/lib/crypto";
 import { toISODate, today } from "@/lib/format";
 import { nextMemberCode, nextReceiptNumber, planEndDate, sanitize, subscriptionStatusFor, toInt, writeAudit } from "@/lib/actions";
 
@@ -41,6 +41,7 @@ export async function POST(request: Request) {
   const endDate = planEndDate(startDate, plan.durationDays);
   const memberCode = await nextMemberCode();
 
+  const avatar = sanitize(body.avatarUrl) || null;
   const [createdUser] = await db
     .insert(users)
     .values({
@@ -49,7 +50,9 @@ export async function POST(request: Request) {
       name,
       email,
       phone: phone || null,
+      profileImage: avatar,
       passwordHash: hashPassword(password),
+      passwordEnc: encryptSecret(password),
     })
     .returning();
 
@@ -68,6 +71,7 @@ export async function POST(request: Request) {
       emergencyContact: sanitize(body.emergencyContact) || null,
       joiningDate: startDate,
       status: "ACTIVE",
+      profileImage: avatar,
     })
     .returning();
 

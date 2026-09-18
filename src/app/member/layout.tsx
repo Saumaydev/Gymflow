@@ -19,6 +19,7 @@ export default async function MemberLayout({ children }: { children: ReactNode }
         email: user.email,
         role: "MEMBER",
         gymName: user.gym.name,
+        avatarUrl: user.profileImage,
         subtitle: `Member ${user.member?.memberCode ?? ""} · membership updates land here first`,
       }}
       unread={unread[0]?.c ?? 0}

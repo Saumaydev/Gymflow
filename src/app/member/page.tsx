@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Activity, BadgeIndianRupee, BellRing, CalendarX2, Check, Dumbbell, Flame, Sparkles } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { getMemberDashboard } from "@/lib/queries";
-import { DarkPanel, IconTile, KeyValue, PastelCard, Pill, ProgressBar, SectionHeading, StatusDot } from "@/components/ui/primitives";
+import { Avatar, DarkPanel, IconTile, KeyValue, PastelCard, Pill, ProgressBar, SectionHeading, StatusDot } from "@/components/ui/primitives";
 import { CircularGauge } from "@/components/ui/charts";
 import { MemberPassCard } from "@/components/ui/MemberPass";
 import { formatDate, formatTime, inr, relativeDay } from "@/lib/format";
@@ -34,12 +34,21 @@ export default async function MemberHome() {
           </h1>
           <p className="mt-2 text-[13.5px] text-ghost-dim">Welcome back! Here’s your training snapshot.</p>
         </div>
-        <Link
-          href="/member/notifications"
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 rounded-pill border border-white/8 bg-white/5 py-1.5 pl-1.5 pr-4">
+            <Avatar name={user.name} size={38} src={user.profileImage} subtitle={`${data.member.memberCode} · ${current?.planName ?? "No plan"}`} />
+            <div className="hidden leading-tight sm:block">
+              <p className="text-[12.5px] font-semibold text-ghost">{user.name}</p>
+              <p className="gf-num text-[11px] text-ghost-muted">{data.member.memberCode}</p>
+            </div>
+          </div>
+          <Link
+            href="/member/notifications"
           className="inline-flex h-11 items-center gap-2 rounded-pill border border-white/8 bg-white/5 px-4 text-[13px] font-semibold text-ghost-dim transition hover:bg-white/10"
         >
-          <BellRing size={15} /> {unread} unread
-        </Link>
+            <BellRing size={15} /> {unread} unread
+          </Link>
+        </div>
       </div>
 
       {/* Membership card (PRD §57) */}
@@ -142,9 +151,7 @@ export default async function MemberHome() {
           />
           {trainer ? (
             <div className="mt-5 flex items-center gap-4 rounded-card border border-white/7 bg-white/4 p-5">
-              <span className="gf-num flex h-16 w-16 items-center justify-center rounded-hero bg-pastel-lavender text-[20px] font-semibold text-pastel-ink">
-                {trainer.name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
-              </span>
+              <Avatar name={trainer.name} size={64} accent="lavender" src={trainer.profileImage} subtitle={trainer.specialization ?? "Coach"} />
               <div>
                 <p className="text-[16px] font-semibold text-ghost">{trainer.name}</p>
                 <p className="text-[12.5px] text-ghost-dim">

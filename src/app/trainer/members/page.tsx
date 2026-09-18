@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { Activity, Check, Users } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { getTrainerDashboard } from "@/lib/queries";
-import { DarkPanel, EmptyState, IconTile, MetricCard, Pill, ProgressBar, SectionHeading } from "@/components/ui/primitives";
+import { Avatar, DarkPanel, EmptyState, IconTile, MetricCard, Pill, ProgressBar, SectionHeading } from "@/components/ui/primitives";
 import { CheckinStation } from "@/components/admin/CheckinStation";
 import { ACCENT } from "@/lib/tokens";
 
@@ -41,9 +41,13 @@ export default async function TrainerMembersPage() {
         <div className="space-y-3">
           {ordered.map((member) => (
             <DarkPanel key={member.id} className="flex flex-wrap items-center gap-4">
-              <span className="gf-num flex h-11 w-11 items-center justify-center rounded-full bg-pastel-lavender text-[14px] font-semibold text-pastel-ink">
-                {member.name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
-              </span>
+              <Avatar
+                name={member.name}
+                size={44}
+                accent="lavender"
+                src={member.profile_image}
+                subtitle={`${member.member_code} · ${member.plan_name ?? "No plan"}`}
+              />
               <div className="min-w-[170px] flex-1">
                 <p className="truncate text-[13.5px] font-semibold text-ghost">{member.name}</p>
                 <p className="text-[11.5px] text-ghost-muted">

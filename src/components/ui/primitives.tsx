@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { AvatarTrigger } from "@/components/ui/AvatarViewer";
 import { pastelBg, type PastelKey } from "@/lib/tokens";
 import { initials } from "@/lib/format";
 
@@ -348,16 +349,30 @@ export function Avatar({
   name,
   size = 44,
   accent,
+  src,
+  subtitle,
   className = "",
 }: {
   name: string;
   size?: number;
   accent?: PastelKey;
+  /** When set, the photo is shown and press-and-hold enlarges it. */
+  src?: string | null;
+  subtitle?: string;
   className?: string;
 }) {
   const keys: PastelKey[] = ["cyan", "lavender", "cream", "blush", "sage", "blue"];
   const key = accent ?? keys[name.length % keys.length];
-  return (
+
+  const surface = src ? (
+    <span
+      className={`relative inline-flex shrink-0 overflow-hidden rounded-full border border-white/15 ${className}`}
+      style={{ width: size, height: size }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt={name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
+    </span>
+  ) : (
     <span
       className={`${pastelBg[key]} text-pastel-ink inline-flex shrink-0 items-center justify-center rounded-full font-semibold ${className}`}
       style={{ width: size, height: size, fontSize: size * 0.36 }}
@@ -365,6 +380,12 @@ export function Avatar({
     >
       {initials(name)}
     </span>
+  );
+
+  return (
+    <AvatarTrigger src={src} name={name} subtitle={subtitle}>
+      {surface}
+    </AvatarTrigger>
   );
 }
 

@@ -15,10 +15,12 @@ import {
 } from "lucide-react";
 import { requireAdmin } from "@/lib/auth";
 import { getMemberProfile, plansForPicker, trainersForPicker } from "@/lib/queries";
-import { DarkPanel, GlassLink, IconTile, KeyValue, PastelCard, Pill, ProgressBar, SectionHeading, StatusDot } from "@/components/ui/primitives";
+import { Avatar, DarkPanel, GlassLink, IconTile, KeyValue, PastelCard, Pill, ProgressBar, SectionHeading, StatusDot } from "@/components/ui/primitives";
 import { Timer } from "lucide-react";
 import { AssignTrainerForm, RecordPaymentForm, SubscriptionActions } from "@/components/admin/forms";
 import { MemberPassMini } from "@/components/ui/MemberPass";
+import { AvatarUploader } from "@/components/admin/AvatarUploader";
+import { AccountDangerZone, CredentialsCard } from "@/components/admin/AccountControls";
 import { MemberCard } from "@/components/cards";
 import { formatDate, formatTime, inr, relativeDay } from "@/lib/format";
 import { ACCENT } from "@/lib/tokens";
@@ -62,21 +64,23 @@ export default async function MemberDetailPage({
       <DarkPanel elevated>
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="flex items-start gap-4">
-            <span className="gf-num flex h-16 w-16 items-center justify-center rounded-hero bg-pastel-cyan text-[20px] font-semibold text-pastel-ink">
-              {member.name
-                .split(" ")
-                .map((p) => p[0])
-                .slice(0, 2)
-                .join("")}
-            </span>
+            <Avatar
+              name={member.name}
+              size={68}
+              accent="cyan"
+              src={member.profileImage}
+              subtitle={`${member.memberCode} · joined ${formatDate(member.joiningDate)}`}
+              className={member.profileImage ? "border-2 border-white/25" : "gf-num bg-pastel-cyan text-pastel-ink"}
+            />
             <div>
               <h1 className="text-[26px] font-semibold tracking-tight text-ghost">{member.name}</h1>
               <p className="mt-1 text-[13px] text-ghost-dim">
                 {member.memberCode} · joined {formatDate(member.joiningDate)}
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-3">
-                <StatusDot status={current?.status ?? member.status} />
+                <StatusDot status={member.status === "INACTIVE" ? "INACTIVE" : (current?.status ?? member.status)} />
                 <Pill tone="info">{current?.planName ?? "No plan"}</Pill>
+                {member.status === "INACTIVE" ? <Pill tone="danger">Deactivated</Pill> : null}
                 {current && current.amountDue > 0 ? <Pill tone="warning">{inr(current.amountDue)} due</Pill> : <Pill tone="positive">Payments settled</Pill>}
               </div>
             </div>
@@ -202,6 +206,49 @@ export default async function MemberDetailPage({
           </DarkPanel>
 
           <div className="space-y-5">
+            <DarkPanel>
+              <SectionHeading title="Photo" caption="Uploaded by the gym — shown in every panel" />
+              <div className="mt-4">
+                <AvatarUploader
+                  name={member.name}
+                  scope="members"
+                  initialUrl={member.profileImage}
+                  persistTo={{ kind: "member", id: member.id }}
+                  size={76}
+                  label="Member photo"
+                />
+              </div>
+            </DarkPanel>
+
+            <DarkPanel>
+              <SectionHeading title="Credentials" caption="Owner-only visibility" />
+              <div className="mt-4">
+                <CredentialsCard
+                  kind="member"
+                  id={member.id}
+                  name={member.name}
+                  email={user?.email ?? member.email}
+                  storedPassword={profile.storedPassword}
+                />
+              </div>
+            </DarkPanel>
+
+            <DarkPanel>
+              <SectionHeading title="Account controls" caption="Deactivate or remove this member" />
+              <div className="mt-4">
+                <AccountDangerZone
+                  kind="member"
+                  id={member.id}
+                  name={member.name}
+                  code={member.memberCode}
+                  email={user?.email ?? member.email}
+                  storedPassword={profile.storedPassword}
+                  active={member.status !== "INACTIVE"}
+                  redirectTo="/admin/members"
+                />
+              </div>
+            </DarkPanel>
+
             <DarkPanel>
               <SectionHeading
                 title="Check-in pass"

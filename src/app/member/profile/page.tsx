@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { BadgeIndianRupee, BellRing, CalendarDays, Dumbbell } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { getMemberProfile } from "@/lib/queries";
-import { DarkPanel, KeyValue, PastelCard, Pill, SectionHeading } from "@/components/ui/primitives";
+import { Avatar, DarkPanel, KeyValue, PastelCard, Pill, SectionHeading } from "@/components/ui/primitives";
 import { MemberPassCard } from "@/components/ui/MemberPass";
 import { formatDate } from "@/lib/format";
 
@@ -25,9 +25,13 @@ export default async function MemberProfilePage() {
 
       <div className="grid gap-5 xl:grid-cols-[1fr_1.3fr]">
         <PastelCard accent="cream" hero>
-          <span className="gf-num flex h-20 w-20 items-center justify-center rounded-hero bg-white/60 text-[26px] font-semibold">
-            {member.name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
-          </span>
+          <Avatar
+            name={member.name}
+            size={92}
+            src={member.profileImage}
+            subtitle={`${member.memberCode} · ${current?.planName ?? "No plan"}`}
+            className={member.profileImage ? "border-2 border-white/70" : "bg-white/60"}
+          />
           <p className="mt-5 text-[24px] font-semibold leading-none">{member.name}</p>
           <p className="mt-1.5 text-[12.5px] font-semibold text-pastel-ink/60">{member.memberCode}</p>
           <div className="mt-4 flex flex-wrap gap-2">

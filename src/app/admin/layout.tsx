@@ -19,6 +19,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
         email: admin.email,
         role: "ADMIN",
         gymName: admin.gym.name,
+        avatarUrl: admin.profileImage,
         subtitle: `${admin.gym.expiringThresholdDays}-day expiry alerts · ${admin.gym.inactivityDays}-day inactivity watch`,
       }}
       unread={unread[0]?.c ?? 0}

@@ -3,8 +3,10 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, CalendarClock, CheckCircle2, Dumbbell, Mail, Phone, Users } from "lucide-react";
 import { requireAdmin } from "@/lib/auth";
 import { getTrainerProfile, membersForPicker } from "@/lib/queries";
-import { DarkPanel, IconTile, KeyValue, MetricCard, Pill, ProgressBar, SectionHeading } from "@/components/ui/primitives";
+import { Avatar, DarkPanel, IconTile, KeyValue, MetricCard, Pill, ProgressBar, SectionHeading } from "@/components/ui/primitives";
 import { AssignTrainerForm } from "@/components/admin/forms";
+import { AvatarUploader } from "@/components/admin/AvatarUploader";
+import { AccountDangerZone, CredentialsCard } from "@/components/admin/AccountControls";
 import { formatDate, formatTime, inr, pct } from "@/lib/format";
 import { ACCENT } from "@/lib/tokens";
 
@@ -34,9 +36,14 @@ export default async function TrainerDetailPage({ params }: { params: Promise<{ 
       <DarkPanel elevated>
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="flex items-start gap-4">
-            <span className="gf-num flex h-16 w-16 items-center justify-center rounded-hero bg-pastel-lavender text-[20px] font-semibold text-pastel-ink">
-              {trainer.name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
-            </span>
+            <Avatar
+              name={trainer.name}
+              size={68}
+              accent="lavender"
+              src={trainer.profileImage}
+              subtitle={trainer.specialization ?? "Coach"}
+              className={trainer.profileImage ? "border-2 border-white/25" : "gf-num bg-pastel-lavender text-pastel-ink"}
+            />
             <div>
               <h1 className="text-[26px] font-semibold tracking-tight text-ghost">{trainer.name}</h1>
               <p className="mt-1 text-[13px] text-ghost-dim">
@@ -76,9 +83,13 @@ export default async function TrainerDetailPage({ params }: { params: Promise<{ 
           <div className="mt-4 space-y-3">
             {assigned.map((member) => (
               <div key={member.id} className="flex flex-wrap items-center gap-4 rounded-card border border-white/7 bg-white/4 p-4">
-                <IconTile accent={member.present_today ? "sage" : "lavender"} size="sm">
-                  <Users size={14} />
-                </IconTile>
+                <Avatar
+                  name={member.name}
+                  size={36}
+                  accent={member.present_today ? "sage" : "lavender"}
+                  src={member.profile_image}
+                  subtitle={member.plan_name ?? undefined}
+                />
                 <div className="min-w-[140px] flex-1">
                   <p className="truncate text-[13px] font-semibold text-ghost">{member.name}</p>
                   <p className="text-[11px] text-ghost-muted">
@@ -97,6 +108,49 @@ export default async function TrainerDetailPage({ params }: { params: Promise<{ 
         </DarkPanel>
 
         <div className="space-y-5">
+          <DarkPanel>
+            <SectionHeading title="Photo" caption="Shown on trainer cards and the trainer app" />
+            <div className="mt-4">
+              <AvatarUploader
+                name={trainer.name}
+                scope="trainers"
+                initialUrl={trainer.profileImage}
+                persistTo={{ kind: "trainer", id: trainer.id }}
+                size={76}
+                label="Trainer photo"
+              />
+            </div>
+          </DarkPanel>
+
+          <DarkPanel>
+            <SectionHeading title="Credentials" caption="Owner-only visibility" />
+            <div className="mt-4">
+              <CredentialsCard
+                kind="trainer"
+                id={trainer.id}
+                name={trainer.name}
+                email={trainer.email}
+                storedPassword={profile.storedPassword}
+              />
+            </div>
+          </DarkPanel>
+
+          <DarkPanel>
+            <SectionHeading title="Account controls" caption="Deactivate or remove this coach" />
+            <div className="mt-4">
+              <AccountDangerZone
+                kind="trainer"
+                id={trainer.id}
+                name={trainer.name}
+                code={trainer.trainerCode}
+                email={trainer.email}
+                storedPassword={profile.storedPassword}
+                active={trainer.status !== "INACTIVE"}
+                redirectTo="/admin/trainers"
+              />
+            </div>
+          </DarkPanel>
+
           <DarkPanel>
             <SectionHeading title="Contract" caption="Employment terms" />
             <div className="mt-5 grid gap-4 sm:grid-cols-2">

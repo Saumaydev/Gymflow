@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Modal, toast } from "@/components/ui/overlay";
 import { CheckinStation } from "@/components/admin/CheckinStation";
+import { AvatarUploader } from "@/components/admin/AvatarUploader";
 import { Field, SelectField, TextArea, TextField } from "@/components/ui/form";
 import { GlassButton, IconTile, KeyValue, Pill, ProgressBar } from "@/components/ui/primitives";
 import { inr } from "@/lib/format";
@@ -223,6 +224,8 @@ export function PlanCreator() {
 
 export function TrainerCreator({ autoOpen = false }: { autoOpen?: boolean }) {
   const params = useSearchParams();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [trainerPhotoName, setTrainerPhotoName] = useState("New Coach");
   const [open, setOpen] = useState(autoOpen || params.get("new") === "1");
   const [pending, setPending] = useState(false);
   const router = useRouter();
@@ -254,6 +257,7 @@ export function TrainerCreator({ autoOpen = false }: { autoOpen?: boolean }) {
                 commissionPct: form.get("commissionPct"),
                 workingHours: form.get("workingHours"),
                 joiningDate: form.get("joiningDate"),
+                avatarUrl,
               });
               toast({
                 title: `${result.trainer.code} created`,
@@ -270,7 +274,13 @@ export function TrainerCreator({ autoOpen = false }: { autoOpen?: boolean }) {
           }}
           className="grid gap-5 sm:grid-cols-2"
         >
-          <TextField label="Full name" name="name" required placeholder="Arjun Mehta" />
+          <TextField
+            label="Full name"
+            name="name"
+            required
+            placeholder="Arjun Mehta"
+            onChange={(event) => setTrainerPhotoName(event.target.value || "New Coach")}
+          />
           <TextField label="Email" name="email" type="email" required placeholder="arjun@gymflow.app" />
           <TextField label="Phone" name="phone" placeholder="+91 98450 00000" />
           <TextField label="Specialisation" name="specialization" placeholder="Strength Coach" />
@@ -289,6 +299,16 @@ export function TrainerCreator({ autoOpen = false }: { autoOpen?: boolean }) {
           <TextField label="Commission (%)" name="commissionPct" type="number" min="0" defaultValue={12} />
           <TextField label="Working hours" name="workingHours" defaultValue="6 AM – 2 PM" />
           <TextField label="Joining date" name="joiningDate" type="date" />
+          <div className="sm:col-span-2">
+            <AvatarUploader
+              name={trainerPhotoName}
+              scope="trainers"
+              size={72}
+              label="Profile photo"
+              hint="Shown on trainer cards, the coaching roster and the trainer app."
+              onUploaded={setAvatarUrl}
+            />
+          </div>
           <div className="sm:col-span-2 flex justify-end gap-3">
             <GlassButton onClick={() => setOpen(false)}>Cancel</GlassButton>
             <button type="submit" disabled={pending} className="h-11 rounded-pill bg-ghost px-5 text-[13px] font-semibold text-pastel-ink disabled:opacity-60">

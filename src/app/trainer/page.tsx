@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Activity, CalendarClock, Check, Dumbbell, Sparkles, Users } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { getTrainerDashboard, listNotifications } from "@/lib/queries";
-import { DarkPanel, IconTile, KeyValue, MetricCard, PastelCard, Pill, ProgressBar, SectionHeading } from "@/components/ui/primitives";
+import { Avatar, DarkPanel, IconTile, KeyValue, MetricCard, PastelCard, Pill, ProgressBar, SectionHeading } from "@/components/ui/primitives";
 import { MiniChart } from "@/components/ui/charts";
 import { formatDate, formatTime } from "@/lib/format";
 import { ACCENT } from "@/lib/tokens";
@@ -106,9 +106,13 @@ export default async function TrainerDashboard() {
             {roster.slice(0, 10).map((member) => (
               <li key={member.id} className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-white/7 bg-white/4 px-4 py-3">
                 <div className="flex items-center gap-3">
-                  <IconTile accent={member.present_today ? "sage" : "lavender"} size="sm">
-                    <Users size={14} />
-                  </IconTile>
+                  <Avatar
+                    name={member.name}
+                    size={36}
+                    accent={member.present_today ? "sage" : "lavender"}
+                    src={member.profile_image}
+                    subtitle={member.plan_name ?? undefined}
+                  />
                   <div>
                     <p className="text-[13px] font-semibold text-ghost">{member.name}</p>
                     <p className="text-[11px] text-ghost-muted">

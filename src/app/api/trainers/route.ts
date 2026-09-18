@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { trainerContracts, trainers, users } from "@/db/schema";
 import { guardAdmin } from "@/lib/auth";
-import { generateTempPassword, hashPassword } from "@/lib/crypto";
+import { encryptSecret, generateTempPassword, hashPassword } from "@/lib/crypto";
 import { toISODate, today } from "@/lib/format";
 import { sanitize, toInt, writeAudit } from "@/lib/actions";
 
@@ -23,9 +23,19 @@ export async function POST(request: Request) {
   if (existing) return Response.json({ error: "That email already has an account." }, { status: 409 });
 
   const password = sanitize(body.password) || generateTempPassword();
+  const avatar = sanitize(body.avatarUrl) || null;
   const [createdUser] = await db
     .insert(users)
-    .values({ gymId: user.gymId, role: "TRAINER", name, email, phone: phone || null, passwordHash: hashPassword(password) })
+    .values({
+      gymId: user.gymId,
+      role: "TRAINER",
+      name,
+      email,
+      phone: phone || null,
+      profileImage: avatar,
+      passwordHash: hashPassword(password),
+      passwordEnc: encryptSecret(password),
+    })
     .returning();
 
   const code = `TR${2000 + createdUser.id}`;
@@ -44,6 +54,7 @@ export async function POST(request: Request) {
       experienceYears: Math.max(0, toInt(body.experienceYears, 1)),
       bio: sanitize(body.bio) || null,
       joiningDate,
+      profileImage: avatar,
     })
     .returning();
 

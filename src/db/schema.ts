@@ -70,7 +70,10 @@ export const users = pgTable(
     phone: varchar("phone", { length: 32 }),
     profileImage: text("profile_image"),
     passwordHash: text("password_hash").notNull(),
+    /** AES-256-GCM copy so the gym owner can re-share credentials; never sent to members. */
+    passwordEnc: text("password_enc"),
     status: statusEnum("status").notNull().default("ACTIVE"),
+    deactivatedAt: timestamp("deactivated_at", { withTimezone: true }),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

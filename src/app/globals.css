@@ -242,8 +242,3 @@ body {
     color: #000;
   }
 }
-@media (max-width: 1023px) {
-  body:has([role="dialog"][aria-modal="true"]) nav[aria-label="Mobile"] {
-    display: none !important;
-  }
-}

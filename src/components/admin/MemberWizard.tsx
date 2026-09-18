@@ -8,6 +8,7 @@ import { Modal, toast } from "@/components/ui/overlay";
 import { Field, SelectField, TextArea, TextField } from "@/components/ui/form";
 import { Avatar, GlassButton, KeyValue, Pill, ProgressBar } from "@/components/ui/primitives";
 import { MemberPassCard } from "@/components/ui/MemberPass";
+import { AvatarUploader } from "@/components/admin/AvatarUploader";
 import { inr } from "@/lib/format";
 
 export type WizardPlan = { id: number; name: string; price: number; durationDays: number; description: string; features: string[]; accent: string };
@@ -24,7 +25,7 @@ export function MemberWizard({ plans, trainers }: { plans: WizardPlan[]; trainer
   const [created, setCreated] = useState<{ memberCode: string; email: string; password: string; receiptNumber: string | null } | null>(null);
   const [pending, setPending] = useState(false);
   const [form, setForm] = useState({ name: "Rahul Sharma", phone: "", email: "", dob: "", gender: "Male", address: "", emergencyContact: "" });
-  const [photo, setPhoto] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const router = useRouter();
 
   const plan = plans.find((p) => p.id === planId) ?? plans[0];
@@ -41,7 +42,7 @@ export function MemberWizard({ plans, trainers }: { plans: WizardPlan[]; trainer
       const response = await fetch("/api/members", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, planId, trainerId, discount, paid, method: "UPI" }),
+        body: JSON.stringify({ ...form, planId, trainerId, discount, paid, method: "UPI", avatarUrl }),
       });
       const data = (await response.json()) as {
         error?: string;
@@ -77,22 +78,15 @@ export function MemberWizard({ plans, trainers }: { plans: WizardPlan[]; trainer
         <div className="mt-6">
           {step === 0 ? (
             <div className="grid gap-5 sm:grid-cols-2">
-              <div className="sm:col-span-2 flex items-center gap-4">
-                <Avatar name={form.name || "New Member"} size={64} accent="cyan" />
-                <div className="flex-1">
-                  <p className="text-[12.5px] font-semibold text-ghost">Profile photo</p>
-                  <p className="text-[11.5px] text-ghost-muted">Uploads are optional — initials are used as a fallback.</p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPhoto(true);
-                      toast({ title: photo ? "Photo removed" : "Photo placeholder added", message: "Image uploads are handled by the gym’s device camera in production.", tone: "info" });
-                    }}
-                    className="mt-2 h-9 rounded-pill border border-white/10 px-3.5 text-[12px] font-semibold text-ghost-dim hover:bg-white/8"
-                  >
-                    {photo ? "Remove photo" : "Add photo"}
-                  </button>
-                </div>
+              <div className="sm:col-span-2">
+                <AvatarUploader
+                  name={form.name || "New Member"}
+                  scope="members"
+                  size={76}
+                  label="Profile photo"
+                  hint="Shown on the member card, their pass and the member app. Press and hold the photo to preview it."
+                  onUploaded={setAvatarUrl}
+                />
               </div>
               <TextField label="Full name" name="name" value={form.name} onChange={update("name")} required />
               <TextField label="Phone" name="phone" value={form.phone} onChange={update("phone")} placeholder="+91 98450 00000" />
@@ -278,7 +272,7 @@ export function MemberWizard({ plans, trainers }: { plans: WizardPlan[]; trainer
         <div className="rounded-hero border border-white/25 bg-pastel-cream p-6 text-pastel-ink shadow-float">
           <p className="text-[11.5px] font-semibold uppercase tracking-[0.16em] text-pastel-ink/50">New member</p>
           <div className="mt-4 flex items-center gap-3">
-            <Avatar name={form.name || "New Member"} size={52} accent="cyan" />
+            <Avatar name={form.name || "New Member"} size={52} accent="cyan" src={avatarUrl} subtitle={plan?.name ?? undefined} />
             <div className="min-w-0">
               <p className="truncate text-[16px] font-semibold">{form.name || "Unnamed member"}</p>
               <p className="truncate text-[12px] text-pastel-ink/60">{form.email || "email pending"}</p>

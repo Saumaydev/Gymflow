@@ -1,4 +1,4 @@
-import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 
 /* ------------------------------------------------------------------ */
 /* Password hashing (scrypt, no plaintext ever stored)                 */
@@ -17,6 +17,38 @@ export function verifyPassword(password: string, stored: string): boolean {
   const expected = Buffer.from(hash, "hex");
   if (expected.length !== derived.length) return false;
   return timingSafeEqual(derived, expected);
+}
+
+/* ------------------------------------------------------------------ */
+/* Reversible credential storage (owner-visible passwords)             */
+/* ------------------------------------------------------------------ */
+
+function secretKey(): Buffer {
+  const base = process.env.CREDENTIALS_KEY || process.env.SESSION_SECRET || process.env.DATABASE_URL || "gymflow-local-key";
+  return scryptSync(base, "gymflow-credentials-v1", 32);
+}
+
+/** Encrypts a plaintext credential for later display in the admin console. */
+export function encryptSecret(plain: string): string {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", secretKey(), iv);
+  const encrypted = Buffer.concat([cipher.update(plain, "utf8"), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return `v1:${iv.toString("base64url")}:${tag.toString("base64url")}:${encrypted.toString("base64url")}`;
+}
+
+/** Returns null when the value is missing or was written with a different key. */
+export function decryptSecret(payload: string | null | undefined): string | null {
+  if (!payload) return null;
+  const [version, ivPart, tagPart, dataPart] = payload.split(":");
+  if (version !== "v1" || !ivPart || !tagPart || !dataPart) return null;
+  try {
+    const decipher = createDecipheriv("aes-256-gcm", secretKey(), Buffer.from(ivPart, "base64url"));
+    decipher.setAuthTag(Buffer.from(tagPart, "base64url"));
+    return Buffer.concat([decipher.update(Buffer.from(dataPart, "base64url")), decipher.final()]).toString("utf8");
+  } catch {
+    return null;
+  }
 }
 
 /** Readable one-time password handed to a newly registered member/trainer. */
