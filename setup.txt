@@ -1,162 +1,294 @@
-GYMFLOW — SETUP & DEPLOYMENT GUIDE
-==================================
+GYMFLOW — COMPLETE SETUP GUIDE (START HERE)
+===========================================
 
-GymFlow is a production gym-management platform: members, trainers, membership plans,
-subscriptions, partial payments, receipts, attendance (QR), notifications, holidays,
-analytics, reports and role-scoped member/trainer apps.
+Read this file top to bottom. Every step is written for someone who has never
+touched this project before. Nothing here needs prior Supabase or Node knowledge.
 
-This file is the single source of truth for bootstrapping the app. Read it fully before
-changing configuration, and never commit real credentials into source control.
+What GymFlow is: a gym-management platform with three apps in one — an owner console
+(members, trainers, plans, subscriptions, payments, receipts, attendance, analytics,
+reports, settings), a member app and a trainer app. Photos, credentials and QR
+check-in included.
 
--------------------------------------------------------------------------------
-1. STACK
--------------------------------------------------------------------------------
-- Next.js 16 (App Router, React 19, Server Components, TypeScript strict)
-- PostgreSQL (Supabase or any Postgres 14+) through Drizzle ORM (`pg` driver)
-- Tailwind CSS v4, tokens declared in `src/app/globals.css` (`@theme`)
-- Auth: scrypt password hashing + HMAC-signed, HttpOnly session cookie
-- QR: `qrcode` (rendering) + `jsqr` (camera decoding), Lucide icons
+Contents
+  PART A — What you need before you start
+  PART B — Create the Supabase project + database
+  PART C — Create the Supabase Storage bucket (for profile photos)
+  PART D — Configure environment variables
+  PART E — Create the database tables
+  PART F — Run the app locally
+  PART G — First sign-in and initial gym setup
+  PART H — Deploy to production (Vercel or any Node host)
+  PART I — Daily use: how every feature works
+  PART J — Troubleshooting
+  PART K — Security, performance and do-not-touch rules
 
--------------------------------------------------------------------------------
-2. FILES THAT MATTER
--------------------------------------------------------------------------------
-- `src/db/schema.ts` ................ all tables + indexes (every gym table carries gym_id)
-- `src/db/index.ts` ................. pooled client, TLS + Supabase pooler handling
-- `src/lib/bootstrap.ts` ............ first-run provisioning of gym + owner account
-- `src/lib/auth.ts` ................. sessions, role guards, per-request user cache
-- `src/lib/queries.ts` .............. all read models (parallel, request-memoised)
-- `src/lib/actions.ts` .............. payment/subscription business rules
-- `src/lib/qr.ts` ................... QR payload encode/parse
-- `src/components/ui/*` ............. design system (panels, pastel cards, charts, states)
-- `src/components/layout/*` ......... floating navigation, dock, command palette
-- `src/app/admin|member|trainer/*` .. the three role-scoped applications
-- `src/app/api/*` ................... protected JSON endpoints
+===============================================================================
+PART A — WHAT YOU NEED BEFORE YOU START
+===============================================================================
+1. Node.js 20 or newer (check with `node -v`). Download from https://nodejs.org
+2. A free Supabase account: https://supabase.com  (email signup, no card needed)
+3. A terminal (macOS/Linux Terminal, Windows PowerShell or the VS Code terminal)
+4. This project folder on your machine
+5. Optional: a Git + hosting account (Vercel) if you want the app on the internet
 
--------------------------------------------------------------------------------
-3. SUPABASE SETUP (step by step)
--------------------------------------------------------------------------------
-1. Create a project at https://supabase.com (choose the region closest to your users —
-   latency here is the single biggest factor in how fast the app feels).
-2. In Supabase open **Project Settings → Database → Connection string**.
-   Copy the **Connection pooling** string (host `...pooler.supabase.com`). Two modes:
-   - Transaction mode, port `6543` — recommended for serverless/Vercel. GymFlow detects this
-     host and disables prepared-statement caching automatically.
-   - Session mode, port `5432` — recommended for always-on Node servers.
-3. Replace `[YOUR-PASSWORD]` with the database password and keep `?sslmode=require`.
-   Example shape (placeholders only — never commit the real value):
-   `DATABASE_URL=postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres?sslmode=require`
-4. Create the tables (no migration files needed):
+===============================================================================
+PART B — CREATE THE SUPABASE PROJECT + DATABASE  (about 3 minutes)
+===============================================================================
+1. Open https://supabase.com and click "Start your project" → sign in.
+2. Click "New project" and fill in:
+     Name:            gymflow            (anything you like)
+     Database Password: click "Generate a password" and SAVE IT somewhere safe
+     Region:          pick the region closest to you (this decides app speed)
+   Click "Create new project" and wait ~2 minutes until it says the project is ready.
+3. Get the connection string:
+     Left sidebar → Project Settings (gear icon) → Database
+     → scroll to "Connection string" → tab "Connection pooling"
+     Copy the URI. It looks like:
+       postgresql://postgres.abcdefghijklm:YOUR-PASSWORD@aws-0-ap-south-1.pooler.supabase.com:6543/postgres
+   Rules of thumb:
+     • port 6543 (Transaction mode)  → best for serverless hosting (Vercel). Recommended.
+     • port 5432 (Session mode)      → best if you run the app on an always-on server.
+   Keep `?sslmode=require` at the end if it is already there (GymFlow also adds TLS
+   automatically for any non-local host).
+4. Replace YOUR-PASSWORD in that string with the database password from step 2.
+   That full string is your DATABASE_URL — you will paste it in PART D.
+   Never share it, never commit it to Git, never paste it into the app's UI.
+
+===============================================================================
+PART C — CREATE THE SUPABASE STORAGE BUCKET (profile photos)
+===============================================================================
+Member and trainer profile pictures are uploaded here. Skipping this step is fine —
+the app automatically falls back to storing images on the server's own disk, but
+Supabase Storage is recommended for production.
+
+1. In Supabase, left sidebar → Storage → "New bucket".
+2. Bucket name: gymflow
+   Public bucket: ON  (toggle it on — photos must be publicly readable)
+   Click "Create bucket".
+3. Still in Storage, click the gymflow bucket → "Policies" (or Policies tab) → create
+   a policy that allows public read:
+     • Click "New policy" → "Get started quickly" → "Give access to public read"
+       (an INSERT/UPDATE policy is not needed: uploads go through your server with the
+       service-role key, never from the browser.)
+4. Get the API keys you need for uploads:
+     Left sidebar → Project Settings → API
+     Copy these two values:
+       Project URL            → e.g. https://abcdefghijklm.supabase.co
+       service_role secret    → the long "service_role" key (click Reveal)
+   The service_role key bypasses RLS. Keep it server-side only — the app only ever
+   reads it from the server environment, and it is never sent to the browser.
+
+===============================================================================
+PART D — CONFIGURE ENVIRONMENT VARIABLES
+===============================================================================
+1. In the project folder create a file named `.env` (copy `.env.example` if present).
+2. Paste this and fill in your values:
+
+   # --- Required ---
+   DATABASE_URL=postgresql://postgres.PROJECTREF:PASSWORD@aws-0-region.pooler.supabase.com:6543/postgres?sslmode=require
+   SESSION_SECRET=PASTE_A_LONG_RANDOM_STRING
+
+   # --- Owner account created on first run (change the password after first login) ---
+   ADMIN_EMAIL=saumaydev@gmail.com
+   ADMIN_PASSWORD=1234567890
+   ADMIN_NAME=Saumay
+   GYM_NAME=My Gym
+
+   # --- Profile photo storage (from PART C). Optional: omit both to use local disk. ---
+   SUPABASE_URL=https://YOUR-PROJECT-REF.supabase.co
+   SUPABASE_SERVICE_ROLE_KEY=PASTE_THE_SERVICE_ROLE_KEY
+   SUPABASE_STORAGE_BUCKET=gymflow
+
+   # --- Optional tuning (defaults are fine) ---
+   PG_POOL_MAX=10
+   PG_STATEMENT_TIMEOUT_MS=15000
+   PG_DEBUG=false
+
+3. Generate SESSION_SECRET by running this in the terminal and pasting the output:
+       node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+4. `.env` is git-ignored and only ever read on the server. Only variables starting with
+   NEXT_PUBLIC_ would reach the browser; this project uses none.
+
+===============================================================================
+PART E — CREATE THE DATABASE TABLES
+===============================================================================
+1. Install the project's dependencies:
+       npm install
+2. Open `drizzle.config.json` and paste the same connection string from PART B into
+   `dbCredentials.url` (this file is only used by the table-push command, never at runtime).
+3. Create every table and index:
        npx drizzle-kit push
-   This reads `drizzle.config.json`; point its `dbCredentials.url` at the same Supabase URL
-   (or export `DATABASE_URL` and edit that one line before running).
-5. Nothing else is required: tables, indexes and the owner account are provisioned for you
-   on the first request (see section 5). Optionally enable Supabase **Row Level Security**
-   if you also expose the database to clients directly — GymFlow talks to Postgres only from
-   the server, so RLS is not needed for the app itself.
+   When it asks for confirmation, accept. You should see:
+       [✓] Changes applied
+4. Done. Tables, indexes and constraints are created. Re-run this command any time you
+   change `src/db/schema.ts` — it is additive and safe.
 
--------------------------------------------------------------------------------
-4. ENVIRONMENT VARIABLES
--------------------------------------------------------------------------------
-Create `.env` (local) and add the same keys in your host's dashboard (Vercel → Settings →
-Environment Variables). Required:
+===============================================================================
+PART F — RUN THE APP LOCALLY
+===============================================================================
+1. Start the development server:
+       npm run dev
+2. Open http://localhost:3000
+3. To test a production build locally:
+       npm run build
+       npm run start
+4. Quality checks (run these before every deploy):
+       npx next typegen                                   # route types
+       npm exec tsc -- --noEmit --pretty false            # type check
+       npm run lint                                       # lint
+       npm run build                                      # production build
 
-    DATABASE_URL        Postgres/Supabase connection string (see section 3)
-    SESSION_SECRET      long random string used to sign session cookies
-                        generate: node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+===============================================================================
+PART G — FIRST SIGN-IN AND INITIAL GYM SETUP
+===============================================================================
+1. Open http://localhost:3000 — you land on the sign-in screen.
+2. Sign in with the owner account from PART D:
+       Email:    saumaydev@gmail.com
+       Password: 1234567890
+   On the very first request the app provisions your gym workspace and owner account
+   automatically. There is no demo data — you start with a clean, real workspace.
+3. IMPORTANT: change the owner password immediately:
+       Navigation → Settings → Security → type current + new password → Update password.
+4. Complete the setup guide at /onboarding (or click the banner link):
+   a. Gym profile — name, phone, email, address, logo mark, opening hours,
+      expiring-reminder days (30/15/7/3/1 by default) and inactivity threshold (14 days).
+   b. Membership plans — pricing, duration and features (Basic / Standard / Premium / VIP
+      or your own).
+   c. Add a member — the 5-step onboarding collects the photo, personal details, plan,
+      trainer and the first payment, then generates the member code, login and pass QR.
+   d. Add trainers — profile photo, specialisation, contract and salary; then assign
+      members to them.
+5. Members/trainers sign in at the same /login screen using the email and the unique
+   password shown once at creation. If they lose it, open the person's detail page in the
+   admin console → Credentials → "Generate new password" and share the new one.
 
-Optional overrides (sensible defaults are built in):
+===============================================================================
+PART H — DEPLOY TO PRODUCTION (VERCEL OR ANY NODE HOST)
+===============================================================================
+Vercel (easiest):
+  1. Push this project to a GitHub repository.
+  2. https://vercel.com → Add New → Project → import the repository.
+  3. In "Environment Variables", add every variable from PART D (production values):
+     DATABASE_URL, SESSION_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_NAME, GYM_NAME,
+     SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_STORAGE_BUCKET.
+  4. Build command: `npm run build`. Output: default (Next.js is auto-detected).
+  5. Deploy, then open the URL and sign in. HTTPS is provided automatically — this is
+     required for the camera-based QR scanner to work.
+Any other Node host (Railway, Render, Fly.io, a VPS):
+  1. Copy the project, run `npm ci`, `npx drizzle-kit push`, then `npm run build`.
+  2. Start with `npm run start` behind HTTPS (nginx/Caddy) and set the same env vars.
+  3. Keep the server in the same region as your Supabase project for the lowest latency.
+Checklist before going live:
+  [ ] Production DATABASE_URL + a new SESSION_SECRET are set on the host
+  [ ] Owner password changed in Settings → Security
+  [ ] Supabase Storage bucket created and public-read (PART C)
+  [ ] The site is served over HTTPS (QR scanner + secure cookies)
+  [ ] A test member can sign in, see their QR pass and check in
 
-    ADMIN_EMAIL         owner login email           default: saumaydev@gmail.com
-    ADMIN_PASSWORD      owner password              default: 1234567890  ← change after first login
-    ADMIN_NAME          owner display name          default: Saumay
-    GYM_NAME            gym name shown in receipts  default: My Gym
-    PG_POOL_MAX         pool size per server        default: 10
-    PG_STATEMENT_TIMEOUT_MS  query timeout          default: 15000
-    PG_DEBUG            "true" to log SQL           default: off
+===============================================================================
+PART I — DAILY USE: HOW EVERY FEATURE WORKS
+===============================================================================
+Dashboard        Live metrics: members, revenue, outstanding dues, today's attendance,
+                 revenue chart, member growth, action centre and smart insights.
+Members          Search/filter, member cards with photo, open a member for the full
+                 profile (attendance, payments, subscriptions, trainer, activity).
+Add member       5 steps: photo + personal, plan, trainer, payment (partial supported),
+                 account. Generates member code + login + QR pass. The pass is shown
+                 once with a "Print pass" button.
+Credentials      On every member/trainer page → "Credentials". The password is stored
+                 encrypted and revealed only to the owner (reveal, copy, regenerate).
+Deactivate       Member/trainer page → Account controls → Deactivate account. The person
+                 can no longer sign in or check in; all history is kept. Reactivate any
+                 time. Trainer deactivation also ends their roster assignments.
+Delete forever   Member/trainer page → Account controls → Delete permanently. Type the
+                 member/trainer code to confirm. This erases the profile, ledger,
+                 receipts, subscriptions, attendance, assignments and login. Photos in
+                 storage are deleted too. Not reversible.
+Photos           Admin uploads a picture while adding a member/trainer, or later from the
+                 person's page. It appears on admin cards, the member app, the trainer app
+                 and the nav avatar.
+Avatar preview   Press and hold ANY profile picture (mobile or desktop) to open a
+                 full-screen preview over a blurred backdrop. Pinch / scroll / double-tap
+                 to zoom, drag to move, drag down or tap outside (or Esc) to close.
+                 Quick hold-and-release behaves like Instagram's peek.
+Payments         Record payments (full or partial), receipts auto-numbered; view/print a
+                 receipt; pending and overdue buckets; CSV export.
+Attendance       "Scan a pass" opens the QR station: it marks attendance the instant a code
+                 is decoded (no confirm button). For an entrance tablet use the full-screen
+                 station (/admin/attendance/station or /trainer/attendance/station). Wedge
+                 USB scanners and typed codes work too.
+Memberships      Plans, subscriptions, lifecycle actions (renew, extend, upgrade/downgrade,
+                 cancel), expiring/expired views.
+Communication    Send announcements (everyone/members/trainers), automatic expiry
+                 reminders, readership analytics.
+Calendar         Holidays and events; publishing notifies every member automatically.
+Analytics        Revenue by month/stream/plan, member mix, retention, peak hours, weekday
+                 rhythm and smart insights.
+Reports          CSV exports for members, revenue, payments, attendance, trainers,
+                 memberships and inactive members; print any screen to PDF.
+Settings         Gym profile, plan list, attendance methods, reminder schedule, security
+                 and console activity log.
+Trainer app      Assigned roster with photos and presence, roster-augmented attendance
+                 station, own shift schedule and contract view.
+Member app       Membership card with days left, attendance gauge + calendar, payment
+                 history, assigned trainer, notifications, holidays/events, profile — and
+                 the check-in QR pass at the bottom of the home screen.
 
-`.env` is never imported by the client bundle; only `NEXT_PUBLIC_*` variables would be.
+Adding a trainer day-to-day: Admin → Trainers → "Add trainer" (photo, contact,
+specialisation, contract) → then "Assign member" on the trainer page to build the roster.
 
--------------------------------------------------------------------------------
-5. FIRST RUN & THE OWNER ACCOUNT
--------------------------------------------------------------------------------
-On the first request GymFlow runs an idempotent bootstrap that, when the database is empty:
-  1. creates the gym workspace record, and
-  2. creates the owner account from `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
-After that the app is a blank, real workspace — there is no sample data and no test account.
+===============================================================================
+PART J — TROUBLESHOOTING
+===============================================================================
+"Missing DATABASE_URL"                 → your .env is missing or was not picked up;
+                                          restart `npm run dev` after editing it.
+"password authentication failed"       → wrong password inside DATABASE_URL.
+"self-signed certificate" / SSL errors → keep `?sslmode=require` in the URL (remote hosts
+                                          are TLS-enabled automatically).
+"prepared statement already exists"    → you are on the Supabase pooler (port 6543);
+                                          GymFlow already handles this, just make sure the
+                                          URL really points at port 6543.
+Tables missing / "relation does not exist" → run `npx drizzle-kit push` (PART E).
+Photos upload but do not appear          → the bucket must be named `gymflow` and marked
+                                          public; check SUPABASE_URL and the service_role key,
+                                          then re-run the upload. Without Supabase env vars the
+                                          app stores photos locally instead.
+Camera scanner shows nothing             → use https (or localhost), allow camera permission
+                                          in the browser, and prefer the full-screen station
+                                          page. You can always type the member code.
+Nothing appears on the dashboard         → a brand-new workspace is empty by design. Create a
+                                          plan, then add your first member (PART G).
+Console activity log empty               → it fills as you perform actions.
+Forgot the owner password                → set ADMIN_PASSWORD to a new value in .env and run
+                                          this once in the Supabase SQL editor:
+                                            delete from users where role = 'ADMIN';
+                                          Then reload the app: the owner account is recreated.
 
-    Owner sign-in:  saumaydev@gmail.com  /  1234567890     (change it in Settings → Security)
+===============================================================================
+PART K — SECURITY, PERFORMANCE AND DO-NOT-TOUCH RULES
+===============================================================================
+Security
+  • Sessions: HMAC-SHA256 signed cookie, HttpOnly, SameSite=Lax, 7 days, secure in prod.
+  • Passwords: scrypt hashes. A separate AES-256-GCM copy exists only so the owner can
+    re-share credentials; it is readable solely from server-side admin pages and is
+    derived from SESSION_SECRET/CREDENTIALS_KEY. If you rotate those secrets, stored
+    passwords can no longer be revealed (resets still work).
+  • Authorisation is enforced server-side on every page and API route:
+      Admin → own gym · Trainer → assigned roster only · Member → own records only.
+  • Never expose the service_role key, DATABASE_URL or SESSION_SECRET to the client.
 
-Then complete the in-app setup guide (`/onboarding`):
-  1. Gym profile — name, contact, address, opening hours, reminder schedule.
-  2. Membership plans — Basic / Standard / Premium / VIP or your own pricing.
-  3. First member — the 5-step onboarding generates a member code, login and subscription.
-  4. Coaches — add trainers, contracts and assign members.
-Members and trainers sign in with the credentials generated at registration.
+Performance (why the app feels native)
+  • Dashboards/analytics run one parallel query batch, not sequential round trips.
+  • Loaders are wrapped in React `cache()` so a layout and its page share one query.
+  • Client router cache is tuned in `next.config.ts` (staleTimes 60s/300s) and links
+    prefetch, so switching panels is instant.
+  • 31 route skeletons stream instantly while data resolves.
+  • Indexes cover the hot paths (attendance per member/day, payments by date,
+    subscriptions by status/end date/dues, notifications per recipient, audit history).
 
--------------------------------------------------------------------------------
-6. LOCAL DEVELOPMENT
--------------------------------------------------------------------------------
-    npm install
-    # configure .env (section 4)
-    npx drizzle-kit push      # create/update tables
-    npm run dev               # http://localhost:3000
-Quality gates used before every release:
-    npx next typegen
-    npm exec tsc -- --noEmit --pretty false
-    npm run build
-    npm run lint
-
--------------------------------------------------------------------------------
-7. PRODUCTION BUILD & DEPLOY
--------------------------------------------------------------------------------
-    npm run build && npm run start      # any Node host, or deploy to Vercel
-Checklist:
-  - Set DATABASE_URL + SESSION_SECRET in the host environment (production values).
-  - Serve over HTTPS: camera-based QR scanning requires a secure origin.
-  - Add your domain to Supabase allowed origins if you later use Supabase Auth/Storage.
-  - Keep the Supabase project in the same region as the app server to keep queries <20 ms.
-
--------------------------------------------------------------------------------
-8. ATTENDANCE / QR SCANNER
--------------------------------------------------------------------------------
-- Member passes: `GET /api/qr?code=<MEMBER_CODE>` returns a high-contrast SVG that encodes
-  `GYMFLOW:<CODE>`. Members are only ever able to render their own pass.
-- Scanning: `/admin/attendance/station` and `/trainer/attendance/station` (full-screen,
-  best for the entrance tablet). The station decodes continuously using the browser
-  `BarcodeDetector` when available and the bundled `jsqr` engine otherwise, and marks
-  attendance the instant a code is read — no confirmation step. Duplicate same-day scans are
-  reported, never duplicated. USB/keyboard-wedge scanners also work.
-- `parseScannedCode()` accepts raw codes, the `GYMFLOW:`/`GF:` payload and deep links.
-- Camera access needs HTTPS (localhost is treated as secure) and a user permission grant.
-
--------------------------------------------------------------------------------
-9. SECURITY MODEL
--------------------------------------------------------------------------------
-- Sessions: HMAC-SHA256 signed cookie, HttpOnly + SameSite=Lax, 7 day expiry, secure in prod.
-- Passwords: scrypt with per-user salt; hashes only, never reversible.
-- Authorisation: enforced server-side on every page/layout and API route.
-  Admin → own gym only · Trainer → assigned roster only · Member → own records only.
-- Audit: every write records actor, action, entity and value diff in `audit_logs`.
-- Validated inputs on all mutation endpoints; errors never leak internals to the client.
-
--------------------------------------------------------------------------------
-10. PERFORMANCE NOTES
--------------------------------------------------------------------------------
-- Dashboard/analytics read models execute as a single parallel batch (one network hop)
-  instead of sequential queries — important for remote Postgres.
-- Loaders are wrapped in React `cache()` so a layout and its page share one query per request.
-- The client router cache is tuned via `experimental.staleTimes` in `next.config.ts`
-  (dynamic 60s / static 300s): revisiting a panel is instant, while mutations call
-  `router.refresh()` for authoritative data.
-- Navigation links prefetch, and every route ships a skeleton loading surface.
-- Database indexes cover the hot paths: member lookup by code/user, payments by date,
-  attendance by member/day (unique) and by day, subscriptions by status/end date, dues,
-  notifications per recipient, trainer rosters, audit history.
-
--------------------------------------------------------------------------------
-11. DO NOT
--------------------------------------------------------------------------------
-- Do not commit `.env` or paste real credentials into code, tickets or UI.
-- Do not replace the stack (no second ORM, no alternate CSS engine) or hand-edit generated
-  files; extend `src/db/schema.ts` and re-run `npx drizzle-kit push`.
-- Do not add sample/demo accounts to the shipped product — provision real users instead.
+Do not
+  • Commit `.env` or paste real credentials into code, logs, tickets or the UI.
+  • Replace the stack (no second ORM, no second CSS engine) — extend `src/db/schema.ts`
+    and re-run `npx drizzle-kit push`.
+  • Hand-edit files under `.next/` or `node_modules/`.
+  • Ship sample/demo accounts — provision real users instead.
