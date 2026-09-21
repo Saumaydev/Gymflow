@@ -347,7 +347,7 @@ export default function LoginPage() {
             </h2>
             <p
               style={{
-                margin: '6px 0 23px',
+                margin: '6px 0 20px',
                 fontSize: 11,
                 fontWeight: 400,
                 color: '#9a9a9a',
