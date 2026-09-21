@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-
+import { useRouter } from 'next/navigation';
 import { Inter } from 'next/font/google';
 
 const inter = Inter({
@@ -144,7 +144,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+  const router = useRouter();
   async function submit(event: React.FormEvent<HTMLFormElement>) {
   event.preventDefault();
 
@@ -566,20 +566,21 @@ export default function LoginPage() {
                 </label>
 
                 <button
-                  type="button"
-                  style={{
-                    fontSize: 11,
-                    color: '#3b82f6',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: 0,
-                    fontFamily: 'inherit',
-                    fontWeight: 400,
-                  }}
-                >
-                  Forgot password?
-                </button>
+  type="button"
+  onClick={() => router.push('/forgot-password')}
+  style={{
+    fontSize: 11,
+    color: '#3b82f6',
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    padding: 0,
+    fontFamily: 'inherit',
+    fontWeight: 400,
+  }}
+>
+  Forgot password?
+</button>
               </div>
 
               {/* Submit */}
