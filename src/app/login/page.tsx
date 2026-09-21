@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+
 import { Inter } from 'next/font/google';
 
 const inter = Inter({
@@ -136,13 +137,15 @@ function Clasp() {
 }
 
 export default function LoginPage() {
+  
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-async function submit(event: React.FormEvent<HTMLFormElement>) {
+
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
   event.preventDefault();
 
   setPending(true);
@@ -177,6 +180,7 @@ async function submit(event: React.FormEvent<HTMLFormElement>) {
     setPending(false);
   }
 }
+
   return (
     <div
       className={inter.className}
@@ -267,9 +271,9 @@ async function submit(event: React.FormEvent<HTMLFormElement>) {
             position: 'relative',
             zIndex: 10,
             marginTop: -26,
-            width: 300,
+            width: 340,
             background: 'linear-gradient(180deg, #1b1b1b 0%, #141414 42%, #101010 100%)',
-            borderRadius: 18,
+            borderRadius: 20,
             transform: 'rotate(-3.5deg)',
             transformOrigin: '50% 50%',
             boxShadow: `
@@ -286,9 +290,9 @@ async function submit(event: React.FormEvent<HTMLFormElement>) {
               position: 'absolute',
               left: '50%',
               transform: 'translateX(-50%)',
-              top: 13,
-              width: 62,
-              height: 10,
+              top: 14,
+              width: 68,
+              height: 11,
               borderRadius: 16,
               background: '#000000',
               boxShadow: `
@@ -299,14 +303,14 @@ async function submit(event: React.FormEvent<HTMLFormElement>) {
             }}
           />
 
-          <div style={{ padding: '48px 26px 26px' }}>
+          <div style={{ padding: '54px 28px 30px' }}>
             {/* Brand */}
-            <div style={{ textAlign: 'center', marginBottom: 28 }}>
+            <div style={{ textAlign: 'center', marginBottom: 32 }}>
               <h1
                 style={{
                   margin: 0,
                   color: '#ffffff',
-                  fontSize: 30,
+                  fontSize: 34,
                   fontWeight: 800,
                   letterSpacing: '-0.045em',
                   lineHeight: 1,
@@ -316,8 +320,8 @@ async function submit(event: React.FormEvent<HTMLFormElement>) {
               </h1>
               <p
                 style={{
-                  margin: '8px 0 0',
-                  fontSize: 9,
+                  margin: '9px 0 0',
+                  fontSize: 9.5,
                   fontWeight: 500,
                   letterSpacing: '0.34em',
                   color: '#8a8a8a',
@@ -333,18 +337,18 @@ async function submit(event: React.FormEvent<HTMLFormElement>) {
               style={{
                 margin: 0,
                 color: '#ffffff',
-                fontSize: 17,
+                fontSize: 20,
                 fontWeight: 650,
                 letterSpacing: '-0.025em',
                 lineHeight: 1.2,
               }}
             >
-              {pending ? 'Signing in…' : 'Sign In'}
+              Sign In
             </h2>
             <p
               style={{
-                margin: '5px 0 18px',
-                fontSize: 10,
+                margin: '6px 0 20px',
+                fontSize: 13,
                 fontWeight: 400,
                 color: '#9a9a9a',
                 lineHeight: 1.45,
@@ -354,22 +358,22 @@ async function submit(event: React.FormEvent<HTMLFormElement>) {
             </p>
 
             <form
-  onSubmit={submit}
-  style={{ display: 'flex', flexDirection: 'column' }}
->
+              onSubmit={submit}
+              style={{ display: 'flex', flexDirection: 'column' }}
+            >
               {/* Email */}
-              <div style={{ position: 'relative', marginBottom: 10 }}>
+              <div style={{ position: 'relative', marginBottom: 12 }}>
                 <span
                   style={{
                     position: 'absolute',
-                    left: 12,
+                    left: 13,
                     top: '50%',
                     transform: 'translateY(-50%)',
                     pointerEvents: 'none',
                     display: 'flex',
                   }}
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
                     <rect x="3.2" y="5.2" width="17.6" height="13.6" rx="2.2" stroke="#7a7a7a" strokeWidth="1.7" />
                     <path d="M4 7.2l8 6.2 8-6.2" stroke="#7a7a7a" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
@@ -382,15 +386,15 @@ async function submit(event: React.FormEvent<HTMLFormElement>) {
                   autoComplete="email"
                   style={{
                     width: '100%',
-                    height: 42,
-                    paddingLeft: 38,
-                    paddingRight: 14,
+                    height: 44,
+                    paddingLeft: 40,
+                    paddingRight: 15,
                     background: '#161616',
                     border: '1px solid #2b2b2b',
-                    borderRadius: 10,
+                    borderRadius: 11,
                     outline: 'none',
                     color: '#ffffff',
-                    fontSize: 12,
+                    fontSize: 13.5,
                     fontFamily: 'inherit',
                     boxSizing: 'border-box',
                   }}
@@ -404,18 +408,18 @@ async function submit(event: React.FormEvent<HTMLFormElement>) {
               </div>
 
               {/* Password */}
-              <div style={{ position: 'relative', marginBottom: 12 }}>
+              <div style={{ position: 'relative', marginBottom: 14 }}>
                 <span
                   style={{
                     position: 'absolute',
-                    left: 12,
+                    left: 13,
                     top: '50%',
                     transform: 'translateY(-50%)',
                     pointerEvents: 'none',
                     display: 'flex',
                   }}
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
                     <rect x="5" y="11" width="14" height="10" rx="2.2" stroke="#7a7a7a" strokeWidth="1.7" />
                     <path
                       d="M8 11V8.2a4 4 0 0 1 8 0V11"
@@ -433,15 +437,15 @@ async function submit(event: React.FormEvent<HTMLFormElement>) {
                   autoComplete="current-password"
                   style={{
                     width: '100%',
-                    height: 42,
-                    paddingLeft: 38,
-                    paddingRight: 38,
+                    height: 44,
+                    paddingLeft: 40,
+                    paddingRight: 40,
                     background: '#161616',
                     border: '1px solid #2b2b2b',
-                    borderRadius: 10,
+                    borderRadius: 11,
                     outline: 'none',
                     color: '#ffffff',
-                    fontSize: 12,
+                    fontSize: 13.5,
                     fontFamily: 'inherit',
                     boxSizing: 'border-box',
                   }}
@@ -458,7 +462,7 @@ async function submit(event: React.FormEvent<HTMLFormElement>) {
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                   style={{
                     position: 'absolute',
-                    right: 12,
+                    right: 13,
                     top: '50%',
                     transform: 'translateY(-50%)',
                     background: 'none',
@@ -470,7 +474,7 @@ async function submit(event: React.FormEvent<HTMLFormElement>) {
                   }}
                 >
                   {showPassword ? (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
                       <path
                         d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"
                         stroke="#7a7a7a"
@@ -480,7 +484,7 @@ async function submit(event: React.FormEvent<HTMLFormElement>) {
                       <circle cx="12" cy="12" r="3" stroke="#7a7a7a" strokeWidth="1.7" />
                     </svg>
                   ) : (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
                       <path d="M3 3l18 18" stroke="#7a7a7a" strokeWidth="1.7" strokeLinecap="round" />
                       <path
                         d="M10.6 10.6A3 3 0 0 0 12 15a3 3 0 0 0 2.45-1.18"
@@ -513,7 +517,7 @@ async function submit(event: React.FormEvent<HTMLFormElement>) {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  marginBottom: 16,
+                  marginBottom: 18,
                 }}
               >
                 <label
@@ -531,9 +535,9 @@ async function submit(event: React.FormEvent<HTMLFormElement>) {
                     aria-checked={remember}
                     onClick={() => setRemember((r) => !r)}
                     style={{
-                      width: 14,
-                      height: 14,
-                      borderRadius: 3.5,
+                      width: 15,
+                      height: 15,
+                      borderRadius: 4,
                       border: remember ? '1.5px solid #ffffff' : '1.5px solid #5a5a5a',
                       background: remember ? '#ffffff' : 'transparent',
                       padding: 0,
@@ -556,7 +560,7 @@ async function submit(event: React.FormEvent<HTMLFormElement>) {
                       </svg>
                     )}
                   </button>
-                  <span style={{ fontSize: 11, color: '#9a9a9a', fontWeight: 400 }}>
+                  <span style={{ fontSize: 12.5, color: '#9a9a9a', fontWeight: 400 }}>
                     Remember me
                   </span>
                 </label>
@@ -564,7 +568,7 @@ async function submit(event: React.FormEvent<HTMLFormElement>) {
                 <button
                   type="button"
                   style={{
-                    fontSize: 11,
+                    fontSize: 12.5,
                     color: '#3b82f6',
                     background: 'none',
                     border: 'none',
@@ -579,43 +583,57 @@ async function submit(event: React.FormEvent<HTMLFormElement>) {
               </div>
 
               {/* Submit */}
+{error && (
+  <p
+    style={{
+      margin: '0 0 12px',
+      color: '#ef4444',
+      fontSize: 12,
+      textAlign: 'center',
+    }}
+  >
+    {error}
+  </p>
+)}
               <button
                 type="submit"
                 style={{
                   width: '100%',
-                  height: 42,
+                  height: 46,
                   borderRadius: 999,
                   background: '#ffffff',
                   color: '#000000',
-                  fontSize: 14,
+                  fontSize: 14.5,
                   fontWeight: 600,
                   letterSpacing: '-0.01em',
                   border: 'none',
-                  cursor: 'pointer',
+                  cursor: pending ? 'default' : 'pointer',
                   fontFamily: 'inherit',
                   boxShadow: '0 1px 0 rgba(255,255,255,0.15)',
                 }}
                 onMouseEnter={(e) => {
+                  if (pending) return;
                   e.currentTarget.style.background = '#f2f2f2';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = '#ffffff';
                 }}
                 onMouseDown={(e) => {
+                  if (pending) return;
                   e.currentTarget.style.transform = 'scale(0.985)';
                 }}
                 onMouseUp={(e) => {
                   e.currentTarget.style.transform = 'scale(1)';
                 }}
               >
-                Sign In
+                {pending ? 'Signing in…' : 'Sign In'}
               </button>
             </form>
 
             {/* Footer motto */}
             <div
               style={{
-                marginTop: 26,
+                marginTop: 30,
                 display: 'flex',
                 alignItems: 'center',
                 gap: 12,
@@ -624,7 +642,7 @@ async function submit(event: React.FormEvent<HTMLFormElement>) {
               <div style={{ flex: 1, height: 1, background: '#2a2a2a' }} />
               <span
                 style={{
-                  fontSize: 8,
+                  fontSize: 9.5,
                   fontWeight: 500,
                   letterSpacing: '0.30em',
                   color: '#6a6a6a',
