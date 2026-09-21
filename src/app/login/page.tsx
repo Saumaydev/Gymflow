@@ -140,7 +140,43 @@ export default function LoginPage() {
   const [remember, setRemember] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+async function submit(event: React.FormEvent<HTMLFormElement>) {
+  event.preventDefault();
 
+  setPending(true);
+  setError(null);
+
+  try {
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        password,
+      }),
+    });
+
+    const data = (await response.json()) as {
+      error?: string;
+      redirectTo?: string;
+    };
+
+    if (!response.ok) {
+      setError(data.error ?? 'Unable to sign in.');
+      setPending(false);
+      return;
+    }
+
+    window.location.assign(data.redirectTo ?? '/admin');
+  } catch {
+    setError('Network error — please try again.');
+    setPending(false);
+  }
+}
   return (
     <div
       className={inter.className}
@@ -303,7 +339,7 @@ export default function LoginPage() {
                 lineHeight: 1.2,
               }}
             >
-              Sign In
+              {pending ? 'Signing in…' : 'Sign In'}
             </h2>
             <p
               style={{
@@ -318,9 +354,9 @@ export default function LoginPage() {
             </p>
 
             <form
-              onSubmit={(e) => e.preventDefault()}
-              style={{ display: 'flex', flexDirection: 'column' }}
-            >
+  onSubmit={submit}
+  style={{ display: 'flex', flexDirection: 'column' }}
+>
               {/* Email */}
               <div style={{ position: 'relative', marginBottom: 10 }}>
                 <span
