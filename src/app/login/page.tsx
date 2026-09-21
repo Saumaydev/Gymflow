@@ -323,7 +323,7 @@ export default function LoginPage() {
                   margin: '9px 0 0',
                   fontSize: 9.5,
                   fontWeight: 500,
-                  letterSpacing: '0.34em',
+                  letterSpacing: '0.30em',
                   color: '#8a8a8a',
                   lineHeight: 1,
                 }}
@@ -347,14 +347,14 @@ export default function LoginPage() {
             </h2>
             <p
               style={{
-                margin: '6px 0 20px',
-                fontSize: 13,
+                margin: '6px 0 23px',
+                fontSize: 11,
                 fontWeight: 400,
                 color: '#9a9a9a',
                 lineHeight: 1.45,
               }}
             >
-              Welcome back! Please sign in to continue.
+                Welcome back! Please sign in to continue.
             </p>
 
             <form
@@ -560,7 +560,7 @@ export default function LoginPage() {
                       </svg>
                     )}
                   </button>
-                  <span style={{ fontSize: 12.5, color: '#9a9a9a', fontWeight: 400 }}>
+                  <span style={{ fontSize: 11, color: '#9a9a9a', fontWeight: 400 }}>
                     Remember me
                   </span>
                 </label>
@@ -568,7 +568,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   style={{
-                    fontSize: 12.5,
+                    fontSize: 11,
                     color: '#3b82f6',
                     background: 'none',
                     border: 'none',
