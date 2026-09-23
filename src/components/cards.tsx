@@ -162,7 +162,9 @@ export function PaymentRow({
 }) {
   const accent = pastelFor(index + payment.member_name);
   return (
-    <div className={`flex items-center gap-4 rounded-card border border-white/25 ${pastelBg[accent]} p-4 text-pastel-ink transition hover:-translate-y-0.5`}>
+    <div
+  className={`flex w-full min-w-0 max-w-full items-center gap-4 overflow-hidden rounded-card border border-white/25 ${pastelBg[accent]} p-4 text-pastel-ink transition hover:-translate-y-0.5`}
+>
       <IconTile accent="dark" size="md" className="bg-white/60 text-pastel-ink">
         <CreditCard size={16} strokeWidth={1.8} />
       </IconTile>
@@ -172,7 +174,7 @@ export function PaymentRow({
           {payment.plan_name ?? payment.notes ?? "Membership"} · {payment.method} · {formatShortDate(payment.paymentDate)}
         </p>
       </div>
-      <div className="text-right">
+      <div className="min-w-0 shrink-0 text-right">
         <p className="gf-num text-[16px] font-semibold">{inr(payment.amount)}</p>
         <Link href={`/admin/payments/${payment.id}/receipt`} className="text-[11px] font-semibold text-pastel-ink/60 underline decoration-pastel-ink/30">
           {payment.receipt_number}

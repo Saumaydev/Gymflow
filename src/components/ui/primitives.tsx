@@ -21,9 +21,9 @@ export function DarkPanel({
 }) {
   return (
     <section
-      className={`gf-hairline rounded-card bg-panel/90 ${elevated ? "shadow-panel" : ""} ${
-        padded ? "p-5 sm:p-6" : ""
-      } ${className}`}
+      className={`gf-hairline min-w-0 max-w-full overflow-hidden rounded-card bg-panel/90 ${
+  elevated ? "shadow-panel" : ""
+} ${padded ? "p-5 sm:p-6" : ""} ${className}`}
     >
       {children}
     </section>
